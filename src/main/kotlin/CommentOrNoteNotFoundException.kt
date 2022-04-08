@@ -1,0 +1,1 @@
+class CommentOrNoteNotFoundException(message: String) : RuntimeException(message)
