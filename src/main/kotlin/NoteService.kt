@@ -1,102 +1,91 @@
-object NoteService {
-    private var notes = mutableListOf<Note>()
-    private var comments = mutableListOf<Comment>()
-    private var counterId = 0
+object NoteService : OverallService<Note> {
+    var notes = mutableListOf<Note>()
+    var commentsNote = mutableListOf<Comment>()
+    private var counterId: Long = 0
 
-    fun add(note: Note) {
+    override fun add(entity: Note): Long {
         counterId++
-        val noteId = note.copy(id = counterId)
+        val noteId = entity.copy(id = counterId)
         notes.add(noteId)
+        return counterId
     }
 
-    fun createComment(comment: Comment) {
-        for (note in notes) {
-            if (note.id == comment.id && note.visibility) {
-                comments.add(comment)
-                return
-            }
-        }
-        throw CommentOrNoteNotFoundException("Impossible to add a comment to a note that does not exist")
-    }
-
-    fun delete(noteId: Int) {
-        for (note in notes) {
-            val indexNote = notes.indexOf(note)
-            if (note.id == noteId && note.visibility) {
+    override fun delete(id: Long) {
+        for ((index, note) in notes.withIndex()) {
+            if (note.id == id && note.visibility) {
                 val delNote = note.copy(visibility = false)
-                notes[indexNote] = delNote
-                for (comment in comments) {
-                    val indexComment = comments.indexOf(comment)
-                    if (comment.id == noteId && comment.visibility) {
-                        comments[indexComment] = comment.copy(visibility = false)
+                notes[index] = delNote
+                for ((index, comment) in commentsNote.withIndex()) {
+                    if (comment.id == id && comment.visibility) {
+                        commentsNote[index] = comment.copy(visibility = false)
                     }
                 }
                 return
             }
         }
-        throw CommentOrNoteNotFoundException("Note not founded")
+        throw CommentNotePostNotFoundException("Note not founded")
     }
 
-    fun deleteComment(commentId: Int) {
-        for (comment in comments) {
-            val indexComment = comments.indexOf(comment)
+    override fun edit(entity: Note) {
+        for ((index, noteEdit) in notes.withIndex()) {
+            if (noteEdit.id == entity.id) {
+                if (noteEdit.visibility) {
+                    notes[index] = entity
+                    return
+                }
+                throw CommentNotePostNotFoundException("Note was delete")
+            }
+        }
+        throw CommentNotePostNotFoundException("Note not found")
+    }
+
+    override fun read(): List<Note> {
+        return notes
+    }
+
+    override fun getById(id: Long): Note {
+        for ((index, note) in notes.withIndex()) {
+            if (note.id == id) return notes[index]
+        }
+        throw CommentNotePostNotFoundException("Note with this id was not found")
+    }
+
+    fun addComment(comment: Comment): Long {
+        for (note in notes) {
+            if (note.id == comment.id && note.visibility) {
+                commentsNote += comment
+                return comment.id
+            }
+        }
+        throw CommentNotePostNotFoundException("Impossible to add a comment to a note that does not exist")
+    }
+
+    fun deleteComment(commentId: Long) {
+        for ((index, comment) in commentsNote.withIndex()) {
             if (comment.id == commentId && comment.visibility) {
-                comments[indexComment] = comment.copy(visibility = false)
+                commentsNote[index] = comment.copy(visibility = false)
                 return
             }
         }
-        throw CommentOrNoteNotFoundException("Comment not founded")
-    }
-
-    fun edit(note: Note) {
-        for (noteEdit in notes) {
-            val indexNote = notes.indexOf(noteEdit)
-            if (noteEdit.id == note.id) {
-                if (noteEdit.visibility) {
-                    notes[indexNote] = note
-                    return
-                }
-                throw CommentOrNoteNotFoundException("Note was delete")
-            }
-        }
-        throw CommentOrNoteNotFoundException("Note not found")
+        throw CommentNotePostNotFoundException("Comment not founded")
     }
 
     fun editComment(comment: Comment) {
-        for (commentEdit in comments) {
-            val indexComment = comments.indexOf(commentEdit)
+        for ((index, commentEdit) in commentsNote.withIndex()) {
             if (commentEdit.id == comment.id) {
                 if (commentEdit.visibility) {
-                    comments[indexComment] = comment
+                    commentsNote[index] = comment
                     return
                 }
-                throw CommentOrNoteNotFoundException("Comment was delete")
+                throw CommentNotePostNotFoundException("Comment was delete")
             }
         }
-        throw CommentOrNoteNotFoundException("Comment not founded")
+        throw CommentNotePostNotFoundException("Comment not founded")
     }
 
-    fun get(): MutableList<Note> {
-        val notDeleteNotes = mutableListOf<Note>()
-        for (noteVisibility in notes) {
-            if (noteVisibility.visibility) {
-                notDeleteNotes += noteVisibility
-            }
-        }
-        return notDeleteNotes
-    }
-
-    fun getById(noteId: Int): Note {
-        for (note in notes) {
-            val indexNote = notes.indexOf(note)
-            if (note.id == noteId) return notes[indexNote]
-        }
-        throw CommentOrNoteNotFoundException("Not found note by id")
-    }
-
-    fun getComments(): MutableList<Comment> {
+    fun readComments(): MutableList<Comment> {
         val notDeleteComment = mutableListOf<Comment>()
-        for (commentVisibility in comments) {
+        for (commentVisibility in commentsNote) {
             if (commentVisibility.visibility) {
                 notDeleteComment += commentVisibility
             }
@@ -104,19 +93,23 @@ object NoteService {
         return notDeleteComment
     }
 
-    fun restoreComment(commentId: Int) {
+    fun restoreComment(commentId: Long) {
         for (note in notes) {
             if (note.id == commentId && note.visibility) {
-                for (comment in comments) {
-                    val indexComment = comments.indexOf(comment)
+                for ((index, comment) in commentsNote.withIndex()) {
                     if (comment.id == commentId && !comment.visibility) {
-                        comments[indexComment] = comment.copy(visibility = true)
+                        commentsNote[index] = comment.copy(visibility = true)
                         return
                     }
                 }
             }
         }
+        throw CommentNotePostNotFoundException("There is no such comment among the delete")
+    }
 
-        throw CommentOrNoteNotFoundException("There is no such comment among the delete")
+    fun clean() {
+        notes = mutableListOf()
+        commentsNote = mutableListOf()
+        counterId = 0
     }
 }

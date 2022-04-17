@@ -1,0 +1,1 @@
+class CommentNotePostNotFoundException(message: String) : RuntimeException(message)

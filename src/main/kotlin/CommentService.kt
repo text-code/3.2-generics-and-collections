@@ -1,0 +1,3 @@
+interface CommentService : OverallService<Comment> {
+
+}

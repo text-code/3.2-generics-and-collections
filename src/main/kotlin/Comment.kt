@@ -1,8 +1,8 @@
 data class Comment(
-    val id: Int = 0,
+    val id: Long = 0,
     val message: String,
-    override val visibility: Boolean = true,
-) : Visibility {
+    val visibility: Boolean = true,
+) {
     override fun toString(): String {
         return "Comment: $id \n$message\n"
     }
